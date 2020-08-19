@@ -1,44 +1,45 @@
 const Discord = require("discord.js");
-const bot = new Discord.Client();
+const fs = require("fs");
 const ytdl = require("ytdl-core");
+const myToken = require("./token");
 
-const token = "NzQ0OTE2MDc3NzAzNzI1MDY2.XzqLKA.PE4N_KeuKI5qnZIUytH3lu_VWjI";
+const bot = new Discord.Client();
+
+const token = myToken.token;
 const prefix = "-";
-const version = "0.0.1";
+const commandFiles = fs.readdirSync("./commands/").filter((file) => {
+  return file.endsWith(".js");
+});
 
+bot.commands = new Discord.Collection();
 bot.login(token);
 
-bot.on("ready", () => {
-  console.log(`Logged in as ${bot.user.tag}`);
+for (let file of commandFiles) {
+  const command = require(`./commands/${file}`);
+  bot.commands.set(command.name, command);
+}
+
+
+
+bot.once("ready", () => {
+  console.log(`${bot.user.tag} is online`);
 });
 bot.on("message", async (msg) => {
-  let args = msg.content.substring(prefix.length).split(" ");
-
-  switch (args[0]) {
+  if (!msg.content.startsWith(prefix) || msg.author.bot) return;
+  const args = msg.content.slice(prefix.length).split(/ +/);
+  const command = args.shift().toLowerCase();
+  switch (command) {
     case "hi":
-      msg.reply("Hello");
+      bot.commands.get("greet").execute(msg, args);
       break;
 
     case "v": {
-      msg.channel.send("Version: " + version);
-      break;
-    }
-
-    case "loser": {
-      const attachment = new Discord.MessageAttachment(
-        "https://media.tenor.com/images/4caae79956a9905f3656ef971114fdf3/tenor.gif"
-      );
-      msg.channel.send(`${msg.author},`, attachment);
-      break;
-    }
-
-    case "avatar": {
-      msg.reply(msg.author.displayAvatarURL());
+      bot.commands.get("version").execute(msg, args);
       break;
     }
 
     case "whoisnoob": {
-      msg.reply('Omega is Noob!');
+      msg.reply("Omega is Noob!");
       break;
     }
 
